@@ -27,32 +27,10 @@
       text-align: center;
       color: #3498db;
     }
-    .field {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 15px;
-      margin-bottom: 15px;
-    }
-    .field-title {
-      font-weight: bold;
-      font-size: 1.2em;
-      margin-bottom: 5px;
-    }
-    .field-content img,
-    .field-content video {
-      max-width: 100%;
-      border-radius: 4px;
-    }
     .loader {
       text-align: center;
       padding: 40px;
       font-style: italic;
-    }
-    #admin-controls {
-      display: none;
-      border-top: 1px solid #ccc;
-      margin-top: 20px;
-      padding-top: 20px;
     }
   </style>
 </head>
@@ -60,14 +38,12 @@
   <div class="container">
     <h1>QRFlow Indhold</h1>
     <div id="loader" class="loader">Indlæser...</div>
-    <div id="fields-container"></div>
-    <div id="admin-controls">
-      <p>🔧 Du har admin-adgang – upload og redigering kommer snart.</p>
-    </div>
   </div>
 
   <script>
-    console.log("⏳ JavaScript kører – testpunkt A");
+    console.log("✅ JavaScript er startet");
 
     const SUPABASE_URL = 'https://oehwuxvljqstccghyjux.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw';
+
+    const { createClient } = supabas
