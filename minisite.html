@@ -19,4 +19,82 @@
     <h1>QRFlow Indhold</h1>
     <div id="loader" class="loader">Indlæser...</div>
     <div id="fields-container"></div>
-    <div id="admin-controls" style="d
+    <div id="admin-controls" style="display:none; margin-top:20px;">
+      <p>🔧 Admin-panel aktiveret</p>
+    </div>
+  </div>
+
+  <script>
+    try {
+      const loader = document.getElementById("loader");
+      const fieldsContainer = document.getElementById("fields-container");
+      const adminControls = document.getElementById("admin-controls");
+
+      const SUPABASE_URL = "https://oehwuxvljqstccghyjux.supabase.co";
+      const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw";
+
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
+
+      function write(msg, cls = "") {
+        if (loader) loader.innerHTML += `<div class="line ${cls}">${msg}</div>`;
+      }
+
+      write("📦 JavaScript kører");
+
+      if (!token) {
+        write("❌ Token mangler i URL", "fail");
+      } else {
+        write("🔑 Token: " + token);
+
+        fetch(`${SUPABASE_URL}/rest/v1/roles?select=*&token=eq.${token}`, {
+          headers: { apikey: ANON_KEY, Authorization: "Bearer " + ANON_KEY }
+        })
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => {
+          if (!data || data.length === 0) return write("🚫 Token ikke fundet", "fail");
+
+          const role = data[0].role;
+          const pageId = data[0].page_id;
+          write("✅ Rolle: " + role, "ok");
+
+          if (role === "owner" || role === "admin") adminControls.style.display = "block";
+          loadFields(pageId);
+        })
+        .catch(err => write("❌ Token-opslag fejlede: " + err, "fail"));
+      }
+
+      function loadFields(pageId) {
+        write("📄 Henter felter...");
+
+        fetch(`${SUPABASE_URL}/rest/v1/fields?select=*&page_id=eq.${pageId}`, {
+          headers: { apikey: ANON_KEY, Authorization: "Bearer " + ANON_KEY }
+        })
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => {
+          if (!data || data.length === 0) return write("⚠️ Ingen felter fundet", "fail");
+
+          fieldsContainer.innerHTML = "";
+          data.forEach(field => {
+            const el = document.createElement("div");
+            el.className = "field";
+            el.innerHTML = `<b>${field.title}</b><br>`;
+
+            const url = `${SUPABASE_URL}/storage/v1/object/public/uploads/${pageId}/${field.content}`;
+            if (field.content_type === "image") el.innerHTML += `<img src="${url}" />`;
+            else if (field.content_type === "video") el.innerHTML += `<video controls src="${url}"></video>`;
+            else if (field.content_type === "document") el.innerHTML += `<a href="${url}" target="_blank">📄 Hent dokument</a>`;
+            else el.innerHTML += `<p>${field.content}</p>`;
+
+            fieldsContainer.appendChild(el);
+          });
+        })
+        .catch(err => write("❌ Fejl ved felt-opslag: " + err, "fail"));
+      }
+    } catch (err) {
+      const l = document.getElementById("loader");
+      if (l) l.innerHTML += `<div class="fail">💥 Kodefejl: ${err.message}</div>`;
+    }
+  </script>
+</body>
+</html>
