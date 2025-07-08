@@ -1,53 +1,366 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QRFlow Minisite – Preview</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #eef2f5; }
-    .box {
-      background: white; padding: 20px; border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;
-    }
-    .role-tag {
-      font-weight: bold; color: #555; margin-bottom: 10px;
-    }
-    .back { margin-top: 20px; background: #ccc; padding: 10px; border-radius: 6px; display: inline-block; text-decoration: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRFlow System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --background-color: #ecf0f1;
+            --surface-color: #ffffff;
+            --danger-color: #e74c3c;
+            --light-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--secondary-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            border-bottom: 2px solid var(--background-color);
+            padding-bottom: 10px;
+        }
+        .field {
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            padding: 15px;
+            position: relative;
+        }
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .field-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        .field-content img, .field-content video {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .field-content a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .field-actions { display: flex; gap: 5px; }
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            color: white;
+        }
+        .btn-edit { background-color: var(--primary-color); }
+        .btn-delete { background-color: var(--danger-color); }
+        #admin-controls { display: none; margin-top: 20px; border-top: 2px solid var(--background-color); padding-top: 20px; }
+        #admin-controls h2 { margin-top: 0; }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input, select, textarea, button {
+            font-family: var(--font-family);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--light-gray);
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #upload-status { margin-top: 10px; font-style: italic; color: var(--dark-gray); }
+        .loader { text-align: center; padding: 50px; }
+    </style>
 </head>
 <body>
-  <h1>QRFlow – Eksempelvisning</h1>
-  <div class="box" id="output">Indlæser...</div>
-  <a href="index.html" class="back">← Vælg en anden kombination</a>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const formaal = params.get("formaal");
-    const type = params.get("type");
-    const role = params.get("role");
+<div class="container">
+    <h1>QRFlow Indhold</h1>
+    <div id="loader" class="loader">Indlæser...</div>
+    <div id="fields-container"></div>
 
-    const box = document.getElementById("output");
+    <div id="admin-controls">
+        <h2>Admin Kontrolpanel</h2>
+        <form id="create-field-form">
+            <input type="text" id="new-title" placeholder="Feltets Titel" required>
+            <select id="new-type" required>
+                <option value="text">Tekst</option>
+                <option value="image">Billede</option>
+                <option value="video">Video</option>
+                <option value="document">Dokument</option>
+            </select>
+            <textarea id="new-content" placeholder="Indhold (tekst eller filnavn efter upload)"></textarea>
+            <input type="file" id="file-upload" />
+            <div id="upload-status"></div>
+            <select id="new-access" required>
+                <option value="public">Offentlig</option>
+                <option value="user">Bruger</option>
+                <option value="trainer">Træner</option>
+                <option value="technician">Tekniker</option>
+                <option value="admin">Administrator</option>
+                <option value="owner">Ejer</option>
+            </select>
+            <button type="submit">Opret Nyt Felt</button>
+        </form>
+        <hr>
+        <h3>Overdrag Ejerskab</h3>
+        <form id="transfer-owner-form">
+             <input type="text" id="new-owner-token" placeholder="Ny ejers token" required>
+             <button type="submit">Overdrag</button>
+        </form>
+    </div>
+</div>
 
-    function renderView() {
-      let html = `<div class="role-tag">Visning for: <strong>${role}</strong></div>`;
+<script>
+    const SUPABASE_URL = 'https://oehwuxvljqstccghyjux.supabase.co;
+    const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw;
 
-      if (formaal === "tyveri" && type === "løs" && role === "bruger") {
-        html += `<p>Hej! Jeg tilhører: Fodbold, Nike No. 5</p>
-                 <p>Er jeg fundet uden genstanden, kan du få 2 kr. i pant. Med genstanden: 100 kr. findeløn.</p>`;
-      }
-      else if (formaal === "tyveri" && type === "løs" && role === "admin") {
-        html += `<p>Du er administrator for en løs genstand. Du kan her redigere:</p>
-                 <ul><li>Findelønsbeløb</li><li>Kontaktinfo</li><li>Synlighedsindstillinger</li></ul>`;
-      }
-      else {
-        html += `<p>Denne kombination viser et testeksempel. Funktioner afhænger af adgangsrollen.</p>`;
-      }
+    const supabase = self.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      box.innerHTML = html;
+    const loader = document.getElementById('loader');
+    const fieldsContainer = document.getElementById('fields-container');
+    const adminControls = document.getElementById('admin-controls');
+    const createForm = document.getElementById('create-field-form');
+    const transferForm = document.getElementById('transfer-owner-form');
+    const fileUploadInput = document.getElementById('file-upload');
+    const newContentInput = document.getElementById('new-content');
+    const uploadStatus = document.getElementById('upload-status');
+
+    let userRole = null;
+    let pageId = null;
+    let userToken = null;
+
+    // Helper to get role hierarchy value
+    const roleHierarchy = {
+        'public': 0, 'user': 1, 'trainer': 2, 'technician': 3, 'admin': 4, 'owner': 5
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const params = new URLSearchParams(window.location.search);
+        userToken = params.get('token');
+
+        if (!userToken) {
+            loader.textContent = 'Fejl: Adgangstoken mangler i URL. Tilføj ?token=din_token';
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('roles')
+            .select('role, page_id')
+            .eq('token', userToken)
+            .single();
+
+        if (error || !data) {
+            loader.textContent = 'Fejl: Ugyldigt token.';
+            console.error('Token validation error:', error);
+            return;
+        }
+
+        userRole = data.role;
+        pageId = data.page_id;
+
+        if (roleHierarchy[userRole] >= roleHierarchy['admin']) {
+            adminControls.style.display = 'block';
+        }
+        
+        await loadFields();
+    });
+
+    async function loadFields() {
+        loader.style.display = 'block';
+        fieldsContainer.innerHTML = '';
+
+        const { data: fields, error } = await supabase
+            .from('fields')
+            .select('*')
+            .eq('page_id', pageId)
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching fields:', error);
+            fieldsContainer.textContent = 'Kunne ikke hente data.';
+            loader.style.display = 'none';
+            return;
+        }
+        
+        fields.forEach(field => {
+            fieldsContainer.appendChild(createFieldElement(field));
+        });
+        
+        loader.style.display = 'none';
     }
 
-    renderView();
-  </script>
+    function createFieldElement(field) {
+        const div = document.createElement('div');
+        div.className = 'field';
+        div.id = `field-${field.id}`;
+
+        let contentHTML = '';
+        if (field.content_type === 'image' || field.content_type === 'video' || field.content_type === 'document') {
+             const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(`${pageId}/${field.content}`);
+             if (field.content_type === 'image') {
+                 contentHTML = `<img src="${publicUrl}" alt="${field.title}">`;
+             } else if (field.content_type === 'video') {
+                 contentHTML = `<video controls src="${publicUrl}"></video>`;
+             } else {
+                 contentHTML = `<a href="${publicUrl}" target="_blank" rel="noopener noreferrer">Download ${field.title}</a>`;
+             }
+        } else {
+            contentHTML = `<p>${field.content}</p>`;
+        }
+
+        let actionsHTML = '';
+        if (roleHierarchy[userRole] >= roleHierarchy['admin']) {
+            actionsHTML = `
+                <div class="field-actions">
+                    <button class="btn btn-edit" onclick="editField(${field.id}, '${field.title}', '${field.content}')">Rediger</button>
+                    <button class="btn btn-delete" onclick="deleteField(${field.id})">Slet</button>
+                </div>
+            `;
+        }
+
+        div.innerHTML = `
+            <div class="field-header">
+                <span class="field-title">${field.title}</span>
+                ${actionsHTML}
+            </div>
+            <div class="field-content">${contentHTML}</div>
+        `;
+        return div;
+    }
+
+    fileUploadInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        uploadStatus.textContent = `Uploader ${file.name}...`;
+        const filePath = `${pageId}/${Date.now()}_${file.name}`;
+        
+        // Use the user's token in the header for the policy to read
+        const { error } = await supabase.storage
+            .from('uploads')
+            .upload(filePath, file, {
+                 headers: { 'x-user-token': userToken }
+            });
+
+        if (error) {
+            uploadStatus.textContent = `Upload fejlede: ${error.message}`;
+            console.error('Upload error:', error);
+        } else {
+            uploadStatus.textContent = `Upload succesfuld! Filnavn: ${filePath.split('/')[1]}`;
+            newContentInput.value = filePath.split('/')[1]; // Set content to the filename
+        }
+    });
+
+    createForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('new-title').value;
+        const type = document.getElementById('new-type').value;
+        const content = document.getElementById('new-content').value;
+        const access = document.getElementById('new-access').value;
+
+        const { data, error } = await supabase
+            .from('fields')
+            .insert({
+                page_id: pageId,
+                title: title,
+                content_type: type,
+                content: content,
+                access_role: access
+            })
+            .select()
+            .single();
+
+        if (error) {
+            alert(`Fejl: ${error.message}`);
+        } else {
+            fieldsContainer.appendChild(createFieldElement(data));
+            createForm.reset();
+            uploadStatus.textContent = '';
+            newContentInput.value = '';
+            fileUploadInput.value = '';
+        }
+    });
+
+    async function deleteField(id) {
+        if (!confirm('Er du sikker på, du vil slette dette felt?')) return;
+
+        const { error } = await supabase.from('fields').delete().eq('id', id);
+
+        if (error) {
+            alert(`Fejl: ${error.message}`);
+        } else {
+            document.getElementById(`field-${id}`).remove();
+        }
+    }
+    
+    // Simplificeret edit-funktion via prompt
+    async function editField(id, currentTitle, currentContent) {
+        const newTitle = prompt("Indtast ny titel:", currentTitle);
+        const newContent = prompt("Indtast nyt indhold:", currentContent);
+
+        if (newTitle === null || newContent === null) return; // User cancelled
+
+        const { data, error } = await supabase
+            .from('fields')
+            .update({ title: newTitle, content: newContent })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            alert(`Fejl: ${error.message}`);
+        } else {
+            await loadFields(); // Reload all fields to show changes
+        }
+    }
+
+    transferForm.addEventListener('submit', async(e) => {
+        e.preventDefault();
+        if (!confirm('Er du sikker på, du vil overdrage ejerskabet? Du mister din egen admin-adgang.')) return;
+
+        const newOwnerToken = document.getElementById('new-owner-token').value;
+        
+        // This requires a stored procedure on Supabase side for security
+        const { error } = await supabase.rpc('transfer_ownership', {
+            p_id: pageId,
+            current_owner_token: userToken,
+            new_owner_token_text: newOwnerToken
+        });
+
+        if (error) {
+            alert(`Fejl ved overdragelse: ${error.message}`);
+        } else {
+            alert('Ejerskab succesfuldt overdraget. Du vil nu blive logget ud.');
+            window.location.search = `?token=${newOwnerToken}`;
+        }
+    });
+
+</script>
 </body>
 </html>
