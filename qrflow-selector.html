@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QRFlow Vælg Formål</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .step, .option {
+      margin-bottom: 20px;
+    }
+    .option button {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      margin: 5px 0;
+      font-size: 18px;
+      background: #00aaff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+    .option button:hover {
+      background: #008ecc;
+    }
+    .hidden {
+      display: none;
+    }
+    .preview {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .actions button {
+      background: #00cc66;
+    }
+  </style>
+</head>
+<body>
+  <h1>QRFlow – Vælg formål</h1>
+
+  <div class="step" id="step1">
+    <p>Hvad vil du bruge din QRFlow til?</p>
+    <div class="option">
+      <button onclick="choosePurpose('tyveri')">Tyverisikring</button>
+      <button onclick="choosePurpose('service')">Service / logning</button>
+      <button onclick="choosePurpose('sporing')">Sporing</button>
+    </div>
+  </div>
+
+  <div class="step hidden" id="step2">
+    <p>Hvilken type genstand?</p>
+    <div class="option">
+      <button onclick="chooseType('fast')">Fast genstand</button>
+      <button onclick="chooseType('løs')">Løs genstand</button>
+    </div>
+  </div>
+
+  <div class="step hidden" id="step3">
+    <p>Hvem skal se denne visning?</p>
+    <div class="option">
+      <button onclick="showPreview('bruger')">Bruger</button>
+      <button onclick="showPreview('træner')">Træner</button>
+      <button onclick="showPreview('tekniker')">Tekniker</button>
+    </div>
+  </div>
+
+  <div class="step hidden" id="previewStep">
+    <div class="preview" id="previewBox">
+      <h2>Preview</h2>
+      <p id="previewText">...</p>
+    </div>
+    <div class="actions">
+      <button onclick="goBack()">Tilpas visning</button>
+      <button onclick="alert('QR genereres (betalingsflow tilføjes senere)')">Præt QR</button>
+    </div>
+  </div>
+
+  <script>
+    let valg = {};
+
+    function choosePurpose(val) {
+      valg.purpose = val;
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+    }
+
+    function chooseType(val) {
+      valg.type = val;
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step3').classList.remove('hidden');
+    }
+
+    function showPreview(role) {
+      valg.role = role;
+      const previewText = `Formål: ${valg.purpose} → Type: ${valg.type} → Visning: ${valg.role}`;
+      document.getElementById('previewText').innerText = previewText;
+      document.getElementById('step3').classList.add('hidden');
+      document.getElementById('previewStep').classList.remove('hidden');
+    }
+
+    function goBack() {
+      document.getElementById('previewStep').classList.add('hidden');
+      document.getElementById('step1').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
