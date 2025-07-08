@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QRFlow Indhold</title>
+  <title>QRFlow Upload</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.6"></script>
   <style>
     body { font-family: sans-serif; background: #ecf0f1; margin: 0; padding: 0; display: flex; justify-content: center; }
@@ -13,6 +13,10 @@
     .ok { color: green; } .fail { color: red; } .line { margin-top: 10px; }
     .field img, .field video { max-width: 100%; border-radius: 6px; margin-top: 10px; }
     .field { margin-top: 20px; }
+    form { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; display: none; flex-direction: column; gap: 10px; }
+    input, textarea, select, button { padding: 10px; font-size: 1rem; border-radius: 4px; border: 1px solid #ccc; }
+    button { background: #3498db; color: white; border: none; cursor: pointer; }
+    #upload-status { font-style: italic; color: gray; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -20,8 +24,29 @@
     <h1>QRFlow Indhold</h1>
     <div id="loader" class="loader">Indlæser...</div>
     <div id="fields-container"></div>
-    <div id="admin-controls" style="display:none; margin-top:20px;">
-      <p>🔧 Admin-panel aktiveret</p>
+    <div id="admin-controls">
+      <form id="create-form">
+        <h3>➕ Opret nyt felt</h3>
+        <input type="text" id="title" placeholder="Titel" required />
+        <select id="type">
+          <option value="text">Tekst</option>
+          <option value="image">Billede</option>
+          <option value="video">Video</option>
+          <option value="document">Dokument</option>
+        </select>
+        <textarea id="content" placeholder="Tekstindhold eller filnavn efter upload..."></textarea>
+        <input type="file" id="file" />
+        <div id="upload-status"></div>
+        <select id="access">
+          <option value="public">Public</option>
+          <option value="user">User</option>
+          <option value="trainer">Trainer</option>
+          <option value="technician">Technician</option>
+          <option value="admin">Admin</option>
+          <option value="owner">Owner</option>
+        </select>
+        <button type="submit">Opret felt</button>
+      </form>
     </div>
   </div>
 
@@ -29,6 +54,7 @@
     const loader = document.getElementById("loader");
     const fieldsContainer = document.getElementById("fields-container");
     const adminControls = document.getElementById("admin-controls");
+    const form = document.getElementById("create-form");
 
     const SUPABASE_URL = "https://oehwuxvljqstccghyjux.supabase.co";
     const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw";
@@ -37,9 +63,10 @@
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
-    function write(msg, cls = "") {
-      loader.innerHTML += `<div class="line ${cls}">${msg}</div>`;
-    }
+    let pageId = null;
+    let role = null;
+
+    const write = (msg, cls = "") => loader.innerHTML += `<div class="line ${cls}">${msg}</div>`;
 
     write("📦 JavaScript kører");
 
@@ -47,51 +74,80 @@
       write("❌ Token mangler i URL", "fail");
     } else {
       write("🔑 Token: " + token);
-
-      supabase
-        .from("roles")
-        .select("*")
-        .eq("token", token)
-        .then(({ data, error }) => {
-          if (error) return write("❌ Token-opslag fejlede: " + error.message, "fail");
-          if (!data || data.length === 0) return write("🚫 Token ikke fundet", "fail");
-
-          const role = data[0].role;
-          const pageId = data[0].page_id;
-          write("✅ Rolle: " + role, "ok");
-
-          if (role === "owner" || role === "admin") adminControls.style.display = "block";
-          loadFields(pageId);
-        });
+      supabase.from("roles").select("*").eq("token", token).then(({ data, error }) => {
+        if (error) return write("❌ Token-opslag fejlede: " + error.message, "fail");
+        if (!data || data.length === 0) return write("🚫 Token ikke fundet", "fail");
+        role = data[0].role;
+        pageId = data[0].page_id;
+        write("✅ Rolle: " + role, "ok");
+        if (["owner", "admin"].includes(role)) {
+          adminControls.style.display = "block";
+          form.style.display = "flex";
+        }
+        loadFields();
+      });
     }
 
-    function loadFields(pageId) {
+    function loadFields() {
       write("📄 Henter felter...");
-
-      supabase
-        .from("fields")
-        .select("*")
-        .eq("page_id", pageId)
-        .then(({ data, error }) => {
-          if (error) return write("❌ Fejl ved felt-opslag: " + error.message, "fail");
-          if (!data || data.length === 0) return write("⚠️ Ingen felter fundet", "fail");
-
-          fieldsContainer.innerHTML = "";
-          data.forEach(field => {
-            const el = document.createElement("div");
-            el.className = "field";
-            el.innerHTML = `<b>${field.title}</b><br>`;
-
-            const url = `${SUPABASE_URL}/storage/v1/object/public/uploads/${pageId}/${field.content}`;
-            if (field.content_type === "image") el.innerHTML += `<img src="${url}" />`;
-            else if (field.content_type === "video") el.innerHTML += `<video controls src="${url}"></video>`;
-            else if (field.content_type === "document") el.innerHTML += `<a href="${url}" target="_blank">📄 Hent dokument</a>`;
-            else el.innerHTML += `<p>${field.content}</p>`;
-
-            fieldsContainer.appendChild(el);
-          });
+      supabase.from("fields").select("*").eq("page_id", pageId).then(({ data, error }) => {
+        if (error) return write("❌ Felt-opslag fejlede: " + error.message, "fail");
+        if (!data || data.length === 0) return write("⚠️ Ingen felter fundet", "fail");
+        fieldsContainer.innerHTML = "";
+        data.forEach(field => {
+          const el = document.createElement("div");
+          el.className = "field";
+          el.innerHTML = `<b>${field.title}</b><br>`;
+          const url = `${SUPABASE_URL}/storage/v1/object/public/uploads/${pageId}/${field.content}`;
+          if (field.content_type === "image") el.innerHTML += `<img src="${url}" />`;
+          else if (field.content_type === "video") el.innerHTML += `<video controls src="${url}"></video>`;
+          else if (field.content_type === "document") el.innerHTML += `<a href="${url}" target="_blank">📄 Hent dokument</a>`;
+          else el.innerHTML += `<p>${field.content}</p>`;
+          fieldsContainer.appendChild(el);
         });
+      });
     }
+
+    const fileInput = document.getElementById("file");
+    const contentInput = document.getElementById("content");
+    const uploadStatus = document.getElementById("upload-status");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const filePath = `${pageId}/${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage.from("uploads").upload(filePath, file);
+      if (error) {
+        uploadStatus.textContent = "❌ Upload fejlede: " + error.message;
+      } else {
+        uploadStatus.textContent = "✅ Upload OK: " + file.name;
+        contentInput.value = filePath.split("/")[1];
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const type = document.getElementById("type").value;
+      const content = document.getElementById("content").value;
+      const access = document.getElementById("access").value;
+
+      const { error } = await supabase.from("fields").insert({
+        page_id: pageId,
+        title,
+        content_type: type,
+        content,
+        access_role: access
+      });
+
+      if (error) {
+        alert("❌ Fejl ved oprettelse: " + error.message);
+      } else {
+        form.reset();
+        uploadStatus.textContent = "";
+        loadFields();
+      }
+    });
   </script>
 </body>
 </html>
