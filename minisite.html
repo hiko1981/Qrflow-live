@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QRFlow Minisite – Preview</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #eef2f5; }
+    .box {
+      background: white; padding: 20px; border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
+    .role-tag {
+      font-weight: bold; color: #555; margin-bottom: 10px;
+    }
+    .back { margin-top: 20px; background: #ccc; padding: 10px; border-radius: 6px; display: inline-block; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>QRFlow – Eksempelvisning</h1>
+  <div class="box" id="output">Indlæser...</div>
+  <a href="index.html" class="back">← Vælg en anden kombination</a>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const formaal = params.get("formaal");
+    const type = params.get("type");
+    const role = params.get("role");
+
+    const box = document.getElementById("output");
+
+    function renderView() {
+      let html = `<div class="role-tag">Visning for: <strong>${role}</strong></div>`;
+
+      if (formaal === "tyveri" && type === "løs" && role === "bruger") {
+        html += `<p>Hej! Jeg tilhører: Fodbold, Nike No. 5</p>
+                 <p>Er jeg fundet uden genstanden, kan du få 2 kr. i pant. Med genstanden: 100 kr. findeløn.</p>`;
+      }
+      else if (formaal === "tyveri" && type === "løs" && role === "admin") {
+        html += `<p>Du er administrator for en løs genstand. Du kan her redigere:</p>
+                 <ul><li>Findelønsbeløb</li><li>Kontaktinfo</li><li>Synlighedsindstillinger</li></ul>`;
+      }
+      else {
+        html += `<p>Denne kombination viser et testeksempel. Funktioner afhænger af adgangsrollen.</p>`;
+      }
+
+      box.innerHTML = html;
+    }
+
+    renderView();
+  </script>
+</body>
+</html>
