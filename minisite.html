@@ -4,85 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QRFlow Indhold</title>
-
-  <script>
-    window.onerror = function(message, source, lineno, colno, error) {
-      const log = document.getElementById('loader');
-      if (log) {
-        log.innerHTML += '<br><span style="color:red">JS-fejl: ' + message + '</span>';
-      }
-    };
-  </script>
-
-  <script type="module">
-    document.addEventListener('DOMContentLoaded', async () => {
-      const loader = document.getElementById('loader');
-      loader.innerHTML += "<br>📦 JavaScript kører.";
-
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-      const supabase = createClient(
-        'https://oehwuxvljqstccghyjux.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw'
-      );
-      loader.innerHTML += "<br>✅ Supabase klient oprettet.";
-
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      if (!token) {
-        loader.innerHTML += "<br>❌ Token mangler i URL.";
-        return;
-      }
-
-      loader.innerHTML += "<br>🔑 Token: " + token;
-
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*')
-        .eq('token', token);
-
-      if (error) {
-        loader.innerHTML += "<br>❌ Supabase-fejl: " + error.message;
-      } else if (!data || data.length === 0) {
-        loader.innerHTML += "<br>🚫 Token ikke fundet i databasen.";
-      } else {
-        loader.innerHTML += "<br>✅ Token OK. Rolle: " + data[0].role;
-      }
-    });
-  </script>
-
   <style>
-    body {
-      font-family: sans-serif;
-      background: #ecf0f1;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      background: white;
-      max-width: 800px;
-      width: 100%;
-      margin: 40px;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #3498db;
-    }
-    .loader {
-      text-align: center;
-      padding: 40px;
-      font-style: italic;
-    }
+    body { font-family: sans-serif; background: #ecf0f1; margin: 0; padding: 0; display: flex; justify-content: center; }
+    .container { background: white; max-width: 800px; width: 100%; margin: 40px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #3498db; }
+    .loader { text-align: center; padding: 20px; font-style: italic; }
+    .ok { color: green; } .fail { color: red; } .line { margin-top: 10px; }
+    .field img, .field video { max-width: 100%; border-radius: 6px; margin-top: 10px; }
+    .field { margin-top: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>QRFlow Indhold</h1>
     <div id="loader" class="loader">Indlæser...</div>
-  </div>
-</body>
-</html>
+    <div id="fields-container"></div>
+    <div id="admin-controls" style="d
