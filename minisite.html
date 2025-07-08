@@ -169,17 +169,33 @@
             return;
         }
 
-        const { data, error } = await supabase
-            .from('roles')
-            .select('role, page_id')
-            .eq('token', userToken)
-            .single();
+       const { data, error } = await supabase
+  .from('roles')
+  .select('role, page_id')
+  .eq('token', userToken);
 
-        if (error || !data) {
-            loader.textContent = 'Fejl: Ugyldigt token.';
-            console.error('Token validation error:', error);
-            return;
-        }
+console.log("RAW data:", data);
+console.log("RAW error:", error);
+
+if (error) {
+  loader.textContent = 'Fejl: Databasefejl.';
+  return;
+}
+
+if (!data || data.length === 0) {
+  loader.textContent = 'Fejl: Token ikke fundet.';
+  return;
+}
+
+const roleData = data[0];
+userRole = roleData.role;
+pageId = roleData.page_id;
+
+if (roleHierarchy[userRole] >= roleHierarchy['admin']) {
+  adminControls.style.display = 'block';
+}
+
+await loadFields();
 
         userRole = data.role;
         pageId = data.page_id;
