@@ -4,7 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QRFlow Indhold</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      const log = document.getElementById('loader');
+      log.innerHTML += '<br><span style="color:red">JS-fejl: ' + message + '</span>';
+    };
+  </script>
   <style>
     body {
       font-family: sans-serif;
@@ -40,10 +45,38 @@
     <div id="loader" class="loader">Indlæser...</div>
   </div>
 
-  <script>
-    console.log("✅ JavaScript er startet");
+  <script type="module">
+    document.getElementById('loader').innerHTML += "<br>📦 JavaScript kører.";
 
-    const SUPABASE_URL = 'https://oehwuxvljqstccghyjux.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw';
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-    const { createClient } = supabas
+    const supabaseUrl = 'https://oehwuxvljqstccghyjux.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw';
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    document.getElementById('loader').innerHTML += "<br>✅ Supabase klient oprettet.";
+
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (!token) {
+      document.getElementById('loader').innerHTML = "❌ Token mangler i URL.";
+    } else {
+      document.getElementById('loader').innerHTML += "<br>🔑 Token: " + token;
+
+      const { data, error } = await supabase
+        .from('roles')
+        .select('role, page_id')
+        .eq('token', token);
+
+      if (error) {
+        document.getElementById('loader').innerHTML += "<br>❌ Supabase-fejl: " + error.message;
+      } else if (!data || data.length === 0) {
+        document.getElementById('loader').innerHTML += "<br>🚫 Token ikke fundet i databasen.";
+      } else {
+        document.getElementById('loader').innerHTML += "<br>✅ Token OK. Rolle: " + data[0].role;
+      }
+    }
+  </script>
+</body>
+</html>
