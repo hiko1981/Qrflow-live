@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QRFlow Indhold</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.6"></script>
   <style>
     body { font-family: sans-serif; background: #ecf0f1; margin: 0; padding: 0; display: flex; justify-content: center; }
     .container { background: white; max-width: 800px; width: 100%; margin: 40px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -25,33 +26,34 @@
   </div>
 
   <script>
-    try {
-      const loader = document.getElementById("loader");
-      const fieldsContainer = document.getElementById("fields-container");
-      const adminControls = document.getElementById("admin-controls");
+    const loader = document.getElementById("loader");
+    const fieldsContainer = document.getElementById("fields-container");
+    const adminControls = document.getElementById("admin-controls");
 
-      const SUPABASE_URL = "https://oehwuxvljqstccghyjux.supabase.co";
-      const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw";
+    const SUPABASE_URL = "https://oehwuxvljqstccghyjux.supabase.co";
+    const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw";
 
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get("token");
+    const supabase = supabase.createClient(SUPABASE_URL, ANON_KEY);
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
 
-      function write(msg, cls = "") {
-        if (loader) loader.innerHTML += `<div class="line ${cls}">${msg}</div>`;
-      }
+    function write(msg, cls = "") {
+      loader.innerHTML += `<div class="line ${cls}">${msg}</div>`;
+    }
 
-      write("📦 JavaScript kører");
+    write("📦 JavaScript kører");
 
-      if (!token) {
-        write("❌ Token mangler i URL", "fail");
-      } else {
-        write("🔑 Token: " + token);
+    if (!token) {
+      write("❌ Token mangler i URL", "fail");
+    } else {
+      write("🔑 Token: " + token);
 
-        fetch(`${SUPABASE_URL}/rest/v1/roles?select=*&token=eq.${token}`, {
-          headers: { apikey: ANON_KEY, Authorization: "Bearer " + ANON_KEY }
-        })
-        .then(res => res.ok ? res.json() : Promise.reject(res.status))
-        .then(data => {
+      supabase
+        .from("roles")
+        .select("*")
+        .eq("token", token)
+        .then(({ data, error }) => {
+          if (error) return write("❌ Token-opslag fejlede: " + error.message, "fail");
           if (!data || data.length === 0) return write("🚫 Token ikke fundet", "fail");
 
           const role = data[0].role;
@@ -60,18 +62,18 @@
 
           if (role === "owner" || role === "admin") adminControls.style.display = "block";
           loadFields(pageId);
-        })
-        .catch(err => write("❌ Token-opslag fejlede: " + err, "fail"));
-      }
+        });
+    }
 
-      function loadFields(pageId) {
-        write("📄 Henter felter...");
+    function loadFields(pageId) {
+      write("📄 Henter felter...");
 
-        fetch(`${SUPABASE_URL}/rest/v1/fields?select=*&page_id=eq.${pageId}`, {
-          headers: { apikey: ANON_KEY, Authorization: "Bearer " + ANON_KEY }
-        })
-        .then(res => res.ok ? res.json() : Promise.reject(res.status))
-        .then(data => {
+      supabase
+        .from("fields")
+        .select("*")
+        .eq("page_id", pageId)
+        .then(({ data, error }) => {
+          if (error) return write("❌ Fejl ved felt-opslag: " + error.message, "fail");
           if (!data || data.length === 0) return write("⚠️ Ingen felter fundet", "fail");
 
           fieldsContainer.innerHTML = "";
@@ -88,12 +90,7 @@
 
             fieldsContainer.appendChild(el);
           });
-        })
-        .catch(err => write("❌ Fejl ved felt-opslag: " + err, "fail"));
-      }
-    } catch (err) {
-      const l = document.getElementById("loader");
-      if (l) l.innerHTML += `<div class="fail">💥 Kodefejl: ${err.message}</div>`;
+        });
     }
   </script>
 </body>
