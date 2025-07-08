@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QRFlow Indhold</title>
-  console.log("⏳ JavaScript kører – testpunkt A");
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -68,26 +67,7 @@
   </div>
 
   <script>
+    console.log("⏳ JavaScript kører – testpunkt A");
+
     const SUPABASE_URL = 'https://oehwuxvljqstccghyjux.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9laHd1eHZsanFzdGNjZ2h5anV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NDAzMjAsImV4cCI6MjA2NzUxNjMyMH0.erCpgwGCrNSKZAPnu4LhAGukCAjLhG0jM95VkLHpvrw';
-
-    const { createClient } = supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const loader = document.getElementById('loader');
-    const fieldsContainer = document.getElementById('fields-container');
-    const adminControls = document.getElementById('admin-controls');
-
-    const roleHierarchy = {
-      'public': 0, 'user': 1, 'trainer': 2, 'technician': 3, 'admin': 4, 'owner': 5
-    };
-
-    let userRole = null;
-    let pageId = null;
-    let userToken = null;
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const params = new URLSearchParams(window.location.search);
-      userToken = params.get('token');
-
-      if (!use
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
